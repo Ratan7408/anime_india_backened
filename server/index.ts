@@ -125,11 +125,12 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
+// Allow all origins for now (temporary - for testing)
 app.use(cors({
-  origin: process.env.FRONTEND_URL || ['https://pod2.animeindia.org', 'http://localhost:5173'],
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true,
+  credentials: false, // Set to false when using origin: '*'
 }));
 
 app.use(mongoSanitize());
