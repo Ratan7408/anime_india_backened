@@ -18,7 +18,8 @@ router.post('/initiate', async (req, res) => {
     }
 
     // Set up redirect URL - PhonePe will redirect here after payment
-    const backendUrl = process.env.BACKEND_URL || process.env.API_BASE_URL || 'http://localhost:5000';
+    const backendUrl = process.env.BACKEND_URL || process.env.API_BASE_URL || 
+      (process.env.NODE_ENV === 'production' ? 'https://api.animeindia.org' : 'http://localhost:8000');
     const redirectUrl = `${backendUrl}/api/payment/callback?merchantTransactionId=${encodeURIComponent(merchantTransactionId)}`;
     
     console.log('🔗 Setting redirectUrl for PhonePe (where to redirect after payment):', redirectUrl);

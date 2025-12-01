@@ -170,16 +170,20 @@ app.post('/pay', async (req, res) => {
       merchantTransactionId: `TXN_${Date.now()}`,
       merchantUserId: "USER123",
       amount: 219800, // in paise (2198.00 INR)
-      redirectUrl: "http://localhost:5000/payment-success.html",
+      redirectUrl: process.env.BACKEND_URL ? `${process.env.BACKEND_URL}/payment-success.html` : 
+        (process.env.NODE_ENV === 'production' ? 'https://api.animeindia.org/payment-success.html' : 'http://localhost:8000/payment-success.html'),
       redirectMode: "REDIRECT",
-      callbackUrl: "http://localhost:5000/payment-success.html",
+      callbackUrl: process.env.BACKEND_URL ? `${process.env.BACKEND_URL}/payment-success.html` : 
+        (process.env.NODE_ENV === 'production' ? 'https://api.animeindia.org/payment-success.html' : 'http://localhost:8000/payment-success.html'),
       paymentInstrument: {
         type: "PAY_PAGE"
       }
     };
 
     // For testing, redirect to our simulator
-    const redirectUrl = `http://localhost:5000/phonepay-simulator.html?merchantId=${payload.merchantId}&merchantTransactionId=${payload.merchantTransactionId}&amount=${payload.amount}`;
+    const backendUrl = process.env.BACKEND_URL || 
+      (process.env.NODE_ENV === 'production' ? 'https://api.animeindia.org' : 'http://localhost:8000');
+    const redirectUrl = `${backendUrl}/phonepay-simulator.html?merchantId=${payload.merchantId}&merchantTransactionId=${payload.merchantTransactionId}&amount=${payload.amount}`;
     res.json({ redirectUrl });
 
   } catch (err) {
