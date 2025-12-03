@@ -22,9 +22,9 @@ class NotificationService {
     
     // Initialize email service using the same config as nodemailer.js
     this.emailTransporter = nodemailer.createTransporter({
-      host: "smtp-relay.brevo.com",
-      port: 587,
-      secure: false,
+      host: "smtp.hostinger.com",
+      port: 465,
+      secure: true, // true for port 465 (SSL/TLS)
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASSWORD
@@ -149,7 +149,7 @@ class NotificationService {
     for (const email of adminEmails) {
       try {
         await this.emailTransporter.sendMail({
-          from: process.env.FROM_CONTACT_EMAIL || process.env.SMTP_USER,
+          from: process.env.ORDERS_EMAIL || process.env.FROM_CONTACT_EMAIL || process.env.SMTP_USER || 'orders@pod.animeindia.org',
           to: email.trim(),
           subject: `🛒 New Order Alert - Order #${notification.order.id}`,
           html: emailContent,

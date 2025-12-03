@@ -126,7 +126,7 @@ async function sendUserNotification(purchase, status) {
     }
 
     if (subject && message) {
-      const fromEmail = process.env.SMTP_USER || "ratansrivastav179@gmail.com";
+      const fromEmail = process.env.ORDERS_EMAIL || process.env.SMTP_USER || "orders@pod.animeindia.org";
 
       // Send to customer
       const mailOptions = {
@@ -290,11 +290,11 @@ router.post('/', protect, async (req, res) => {
               } else if (!user.email) {
                 console.error('❌ User has no email address:', purchase.userId);
               } else {
-                // For Brevo, use a verified sender email as "from", not the SMTP login
-                const fromEmail = process.env.FROM_CONTACT_EMAIL || "ratansrivastav179@gmail.com";
+                // Use orders email for order notifications
+                const fromEmail = process.env.ORDERS_EMAIL || process.env.FROM_CONTACT_EMAIL || "orders@pod.animeindia.org";
                 const adminEmails = process.env.ADMIN_EMAILS
                   ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim())
-                  : ['ratansrivastav179@gmail.com'];
+                  : ['support@pod.animeindia.org'];
 
                 const userName = user.firstName && user.lastName 
                   ? `${user.firstName} ${user.lastName}` 
@@ -567,14 +567,14 @@ router.post('/test-email', protect, async (req, res) => {
 
         // Send test email
         const testMessage = {
-            from: process.env.SMTP_USER,
+            from: process.env.ORDERS_EMAIL || process.env.SMTP_USER || 'orders@pod.animeindia.org',
             to: testEmail,
             subject: '🧪 Test Email - Order Notification System',
             html: `
                 <h2>Email Notification Test</h2>
                 <p>This is a test email to verify that the order notification system is working correctly.</p>
                 <p><strong>Test Time:</strong> ${new Date().toLocaleString()}</p>
-                <p><strong>SMTP Server:</strong> smtp-relay.brevo.com</p>
+                <p><strong>SMTP Server:</strong> smtp.hostinger.com</p>
                 <p>If you received this email, your notification system is configured correctly! ✅</p>
             `
         };

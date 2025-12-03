@@ -227,7 +227,7 @@ app.post('/api/contact', async (req, res) => {
     });
   }
 
-  const supportEmail = process.env.SUPPORT_EMAIL || 'support@animeindiapod.com';
+  const supportEmail = process.env.SUPPORT_EMAIL || 'support@pod.animeindia.org';
   const subject = `Contact Form: ${inquiryType} from ${name}`;
   const html = `
     <h2>New Contact Inquiry</h2>
@@ -241,7 +241,7 @@ app.post('/api/contact', async (req, res) => {
 
   try {
     await transporter.sendMail({
-      from: process.env.FROM_CONTACT_EMAIL,
+      from: process.env.FROM_CONTACT_EMAIL || 'support@pod.animeindia.org',
       to: supportEmail,
       subject,
       html,
@@ -321,7 +321,7 @@ app.post('/api/mail', async (req, res) => {
     // Prepare admin emails
     const adminEmails = process.env.ADMIN_EMAILS
       ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim())
-      : ['ratansrivastav179@gmail.com']; // fallback to admin email
+      : ['support@pod.animeindia.org']; // fallback to support email
 
     const userEmail = purchase.userEmail;
     const userName = purchase.userName || purchase.userEmail || 'Customer';
@@ -374,8 +374,8 @@ app.post('/api/mail', async (req, res) => {
       });
     }
 
-    // For Brevo, use a verified sender email as "from", not the SMTP login
-    const fromEmail = process.env.FROM_CONTACT_EMAIL || "ratansrivastav179@gmail.com";
+    // Use orders email for order confirmations
+    const fromEmail = process.env.ORDERS_EMAIL || process.env.FROM_CONTACT_EMAIL || "orders@pod.animeindia.org";
     console.log(`📧 Using from email: ${fromEmail}`);
     
     // Send to user
@@ -462,7 +462,7 @@ app.post('/api/test-email', async (req, res) => {
   try {
     console.log('🧪 Test email endpoint called');
     const { email } = req.body;
-    const testEmail = email || 'ratansrivastav179@gmail.com';
+    const testEmail = email || 'support@pod.animeindia.org';
 
     console.log('📧 Testing email configuration...');
     console.log('SMTP_USER:', process.env.SMTP_USER ? `✅ Set (${process.env.SMTP_USER})` : '❌ Missing');
@@ -481,7 +481,7 @@ app.post('/api/test-email', async (req, res) => {
     await transporter.verify();
     console.log('✅ Email transporter verified successfully');
 
-    const fromEmail = process.env.FROM_CONTACT_EMAIL || "ratansrivastav179@gmail.com";
+    const fromEmail = process.env.FROM_CONTACT_EMAIL || "support@pod.animeindia.org";
     console.log(`📧 Sending test email from ${fromEmail} to ${testEmail}`);
 
     const testResult = await transporter.sendMail({
@@ -492,7 +492,7 @@ app.post('/api/test-email', async (req, res) => {
         <h2>Email System Test</h2>
         <p>If you received this email, your email system is working correctly! ✅</p>
         <p><strong>Test Time:</strong> ${new Date().toLocaleString()}</p>
-        <p><strong>SMTP Server:</strong> smtp-relay.brevo.com</p>
+        <p><strong>SMTP Server:</strong> smtp.hostinger.com</p>
       `,
     });
 
