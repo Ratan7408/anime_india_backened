@@ -220,6 +220,7 @@ app.use('/api/payment', phonepeCallback); // PhonePe redirect callback after pay
 
 app.post('/api/contact', async (req, res) => {
   const { name, email, orderNumber, inquiryType, message } = req.body;
+
   if (!name || !email || !inquiryType || !message) {
     return res.status(400).json({
       success: false,
@@ -228,6 +229,13 @@ app.post('/api/contact', async (req, res) => {
   }
 
   const supportEmail = process.env.SUPPORT_EMAIL || 'support@pod.animeindia.org';
+
+  const fromEmail =
+    process.env.SMTP_USER ||
+    process.env.ORDERS_EMAIL ||
+    process.env.FROM_CONTACT_EMAIL ||
+    'orders@pod.animeindia.org';
+
   const subject = `Contact Form: ${inquiryType} from ${name}`;
   const html = `
     <h2>New Contact Inquiry</h2>
@@ -236,20 +244,31 @@ app.post('/api/contact', async (req, res) => {
     ${orderNumber ? `<p><strong>Order Number:</strong> ${orderNumber}</p>` : ''}
     <p><strong>Inquiry Type:</strong> ${inquiryType}</p>
     <p><strong>Message:</strong></p>
-    <p>${message.replace(/\n/g, '<br/>')}</p>
+    <p>${String(message).replace(/\n/g, '<br/>')}</p>
   `;
 
   try {
+    console.log('📧 /api/contact called');
+    console.log('📧 From email (SMTP user):', fromEmail);
+    console.log('📧 Support/To email:', supportEmail);
+
     await transporter.sendMail({
-      from: process.env.FROM_CONTACT_EMAIL || 'support@pod.animeindia.org',
+      from: fromEmail,
       to: supportEmail,
+      replyTo: email,
       subject,
       html,
     });
+
     return res.json({ success: true, message: 'Message sent successfully.' });
   } catch (error: any) {
-    console.error('Contact form email error:', error);
-    return res.status(500).json({ success: false, message: 'Failed to send message.', error: error.message });
+    console.error('❌ Contact form email error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to send message.',
+      error: error.message,
+      code: error.code,
+    });
   }
 });
 
