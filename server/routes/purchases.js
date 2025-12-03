@@ -300,20 +300,48 @@ router.post('/', protect, async (req, res) => {
                   ? `${user.firstName} ${user.lastName}` 
                   : user.email;
 
+                const addr = purchase.shippingAddress || {};
+                const baseImageUrl = process.env.BACKEND_URL || process.env.API_BASE_URL || 'https://api.animeindia.org';
+
                 const orderDetails = `
                   <h2>Order Confirmation</h2>
                   <p>Thank you, ${userName}, for your purchase!</p>
+
                   <p><strong>Order ID:</strong> ${purchase._id}</p>
                   <p><strong>Total Amount:</strong> ₹${purchase.totalAmount}</p>
                   <p><strong>Payment Method:</strong> Cash on Delivery (COD)</p>
-                  <h3>Items:</h3>
+
+                  <h3>Shipping Address</h3>
+                  <p>
+                    ${addr.name || ''}<br/>
+                    ${addr.phone ? 'Phone: ' + addr.phone + '<br/>' : ''}
+                    ${addr.email ? 'Email: ' + addr.email + '<br/>' : ''}
+                    ${addr.street || ''}<br/>
+                    ${addr.landmark ? addr.landmark + '<br/>' : ''}
+                    ${[addr.city, addr.state, addr.zipCode].filter(Boolean).join(', ')}<br/>
+                    ${addr.country || ''}
+                  </p>
+
+                  <h3>Items</h3>
                   <ul>
                     ${(purchase.items || []).map(item => `
-                      <li>
-                        ${item.productName} (x${item.quantity})${item.size ? ` - Size: ${item.size}` : ''} - ₹${item.price}
+                      <li style="margin-bottom: 12px;">
+                        <div><strong>${item.productName}</strong> (x${item.quantity})${item.size ? ` - Size: ${item.size}` : ''}</div>
+                        <div>Price: ₹${item.price}</div>
+                        ${item.color ? `<div>Color: ${item.color}</div>` : ''}
+                        ${item.imageUrl ? `
+                          <div style="margin-top: 6px;">
+                            <img 
+                              src="${item.imageUrl.startsWith('http') ? item.imageUrl : `${baseImageUrl}${item.imageUrl}`}" 
+                              alt="${item.productName}" 
+                              style="max-width: 160px; border: 1px solid #eee; border-radius: 4px;"
+                            />
+                          </div>
+                        ` : ''}
                       </li>
                     `).join('')}
                   </ul>
+
                   <p><strong>Status:</strong> ${purchase.status}</p>
                   <p><strong>Order Date:</strong> ${new Date(purchase.createdAt).toLocaleString()}</p>
                   <p>You will pay cash when the order is delivered.</p>
