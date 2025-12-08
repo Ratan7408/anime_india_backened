@@ -114,14 +114,19 @@ export class MongoStorage implements IStorage {
   }
 
   async createProduct(productData: any): Promise<any> {
+    console.log('🗄️ Storage: Creating product with data:', JSON.stringify(productData, null, 2));
     const normalizedVariations = normalizeVariations(productData.variations);
+    console.log('🎨 Storage: Normalized variations:', JSON.stringify(normalizedVariations, null, 2));
 
     const product = new Product({
       ...productData,
       variations: normalizedVariations,
     });
     await product.save();
-    return product.toObject();
+    const saved = product.toObject();
+    console.log('💾 Storage: Saved product:', JSON.stringify(saved, null, 2));
+    console.log('🎨 Storage: Saved product variations:', JSON.stringify(saved.variations, null, 2));
+    return saved;
   }
 
   async updateProduct(id: any, updates: any): Promise<any | undefined> {
