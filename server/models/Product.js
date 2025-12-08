@@ -72,6 +72,28 @@ const productSchema = new mongoose.Schema({
     type: String, // JSON stringified array of available colors
     default: '[]',
   },
+  // ✅ NEW: Product variations (color + image pairs)
+  variations: {
+    type: [
+      {
+        color: {
+          type: String,
+          trim: true,
+        },
+        imageUrl: {
+          type: String,
+          default: '',
+        },
+        imageUrls: [
+          {
+            type: String,
+            default: '',
+          },
+        ],
+      },
+    ],
+    default: [],
+  },
   createdAt: {
     type: Date,
     default: Date.now,

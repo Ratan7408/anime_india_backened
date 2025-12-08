@@ -1,5 +1,47 @@
 import Product from './models/Product.js';
 
+const normalizeVariations = (rawVariations: any): any[] => {
+  if (!rawVariations) return [];
+
+  let parsed = rawVariations;
+  if (typeof rawVariations === 'string') {
+    try {
+      parsed = JSON.parse(rawVariations);
+    } catch {
+      return [];
+    }
+  }
+
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .map((entry) => {
+      if (!entry) return null;
+      const color = typeof entry.color === 'string' ? entry.color : '';
+      const imageUrl = typeof entry.imageUrl === 'string' ? entry.imageUrl : '';
+      const imageUrls = Array.isArray(entry.imageUrls)
+        ? entry.imageUrls.filter((u: string) => typeof u === 'string' && u.trim() !== '')
+        : [];
+
+      const primaryImage = imageUrls[0] || imageUrl || '';
+      const normalizedImages =
+        imageUrls.length > 0
+          ? imageUrls
+          : primaryImage
+            ? [primaryImage]
+            : [];
+
+      if (!color && normalizedImages.length === 0) return null;
+
+      return {
+        color,
+        imageUrl: primaryImage,
+        imageUrls: normalizedImages,
+      };
+    })
+    .filter(Boolean) as any[];
+};
+
 // Remove all interface/type references to Product
 // Remove call to this.initializeSampleProducts()
 
@@ -72,7 +114,12 @@ export class MongoStorage implements IStorage {
   }
 
   async createProduct(productData: any): Promise<any> {
-    const product = new Product(productData);
+    const normalizedVariations = normalizeVariations(productData.variations);
+
+    const product = new Product({
+      ...productData,
+      variations: normalizedVariations,
+    });
     await product.save();
     return product.toObject();
   }
@@ -89,11 +136,16 @@ export class MongoStorage implements IStorage {
     }
     
     console.log('🗄️ Storage: Existing product data:', JSON.stringify(existingProduct, null, 2));
-    
+    const existingVariations = normalizeVariations(existingProduct.variations);
+    const normalizedUpdateVariations = updates.variations !== undefined
+      ? normalizeVariations(updates.variations)
+      : existingVariations;
+
     // ✅ FIXED: Merge updates with existing data, ensuring no fields are lost
     const mergedUpdates = {
       ...existingProduct,
       ...updates,
+      variations: normalizedUpdateVariations,
       updatedAt: new Date() // Always update the timestamp
     };
     
