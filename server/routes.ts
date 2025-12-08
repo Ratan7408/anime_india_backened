@@ -66,7 +66,10 @@ router.get("/products/:id", async (req, res) => {
 router.post("/products", async (req, res) => {
   try {
     console.log('📦 Creating new product:', req.body);
+    console.log('🎨 Request variations:', req.body.variations);
     const product = await storage.createProduct(req.body);
+    console.log('💾 Created product variations:', product?.variations);
+    console.log('💾 Created product keys:', Object.keys(product || {}));
     return res.status(201).json({ success: true, data: product });
   } catch (err: any) {
     console.error("/api/products POST error:", err.message);

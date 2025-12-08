@@ -123,9 +123,15 @@ export class MongoStorage implements IStorage {
       variations: normalizedVariations,
     });
     await product.save();
-    const saved = product.toObject();
+    // Use lean() to get plain object, or toObject() with options
+    const saved = product.toObject({ getters: true, virtuals: false });
     console.log('💾 Storage: Saved product:', JSON.stringify(saved, null, 2));
     console.log('🎨 Storage: Saved product variations:', JSON.stringify(saved.variations, null, 2));
+    // Ensure variations are included
+    if (!saved.variations && normalizedVariations.length > 0) {
+      saved.variations = normalizedVariations;
+      console.log('⚠️ Storage: Variations missing from toObject(), manually adding');
+    }
     return saved;
   }
 
