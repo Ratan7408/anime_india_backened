@@ -129,7 +129,7 @@ export class MongoStorage implements IStorage {
     console.log('🎨 Storage: Saved product variations:', JSON.stringify(saved.variations, null, 2));
     // Ensure variations are included
     if (!saved.variations && normalizedVariations.length > 0) {
-      saved.variations = normalizedVariations;
+      (saved as any).variations = normalizedVariations;
       console.log('⚠️ Storage: Variations missing from toObject(), manually adding');
     }
     return saved;
