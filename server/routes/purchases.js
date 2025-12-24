@@ -39,7 +39,8 @@ async function sendUserNotification(purchase, status) {
     let message = '';
 
     if (status === 'processing') {
-      subject = `🛠️ We're preparing your order #${purchase._id}`;      message = `
+      subject = `🛠️ We're preparing your order #${purchase._id}`;
+      message = `
         <h2>Your Order Is Being Prepared</h2>
         <p>Hello ${userName},</p>
         <p>Your order has moved into processing and our production team is getting it ready.</p>
@@ -263,11 +264,14 @@ router.post('/', protect, async (req, res) => {
         // Populate user details for response
         await purchase.populate('userId', 'firstName lastName email');
 
-        // Send email notification for COD orders immediately
-        if (paymentMethod === 'cod') {
-          console.log('📧 ==========================================');
-          console.log('📧 COD order detected, checking email configuration...');
-          console.log('📧 Payment Method:', paymentMethod);
+        // Send email notification for ALL orders (COD and online payments)
+        // This ensures both user and admin receive emails regardless of payment method
+        console.log('📧 ==========================================');
+        console.log('📧 Order creation detected, checking email configuration...');
+        console.log('📧 Payment Method:', paymentMethod);
+        console.log('📧 Order ID:', purchase._id);
+        
+        if (true) { // Send emails for all payment methods
           console.log('📧 SMTP_USER:', process.env.SMTP_USER ? `✅ Set (${process.env.SMTP_USER})` : '❌ Missing');
           console.log('📧 SMTP_PASSWORD:', process.env.SMTP_PASSWORD ? '✅ Set' : '❌ Missing');
           console.log('📧 FROM_CONTACT_EMAIL:', process.env.FROM_CONTACT_EMAIL || 'Not set (using default)');
@@ -309,7 +313,7 @@ router.post('/', protect, async (req, res) => {
 
                   <p><strong>Order ID:</strong> ${purchase._id}</p>
                   <p><strong>Total Amount:</strong> ₹${purchase.totalAmount}</p>
-                  <p><strong>Payment Method:</strong> Cash on Delivery (COD)</p>
+                  <p><strong>Payment Method:</strong> ${purchase.paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : purchase.paymentMethod === 'phonepe' ? 'PhonePe' : purchase.paymentMethod || 'Online Payment'}</p>
 
                   <h3>Shipping Address</h3>
                   <p>
@@ -344,7 +348,7 @@ router.post('/', protect, async (req, res) => {
 
                   <p><strong>Status:</strong> ${purchase.status}</p>
                   <p><strong>Order Date:</strong> ${new Date(purchase.createdAt).toLocaleString()}</p>
-                  <p>You will pay cash when the order is delivered.</p>
+                  ${purchase.paymentMethod === 'cod' ? '<p>You will pay cash when the order is delivered.</p>' : '<p>Your payment has been received. We will process your order shortly.</p>'}
                 `;
 
                 console.log(`📧 ==========================================`);
@@ -354,7 +358,7 @@ router.post('/', protect, async (req, res) => {
                 const userEmailResult = await transporter.sendMail({
                   from: fromEmail,
                   to: user.email,
-                  subject: 'Your Order Confirmation - Cash on Delivery',
+                  subject: `Your Order Confirmation${purchase.paymentMethod === 'cod' ? ' - Cash on Delivery' : ''}`,
                   html: orderDetails,
                 });
                 console.log(`✅ User email sent successfully!`);
@@ -372,8 +376,8 @@ router.post('/', protect, async (req, res) => {
                     const adminEmailResult = await transporter.sendMail({
                       from: fromEmail,
                       to: adminEmail,
-                      subject: `New COD Order Received: ${purchase._id}`,
-                      html: `<h2>New COD Order from ${userName} (${user.email})</h2>` + orderDetails,
+                      subject: `New Order Received: ${purchase._id} (${purchase.paymentMethod === 'cod' ? 'COD' : purchase.paymentMethod || 'Online'})`,
+                      html: `<h2>New Order from ${userName} (${user.email})</h2><p><strong>Payment Method:</strong> ${purchase.paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : purchase.paymentMethod || 'Online Payment'}</p>` + orderDetails,
                     });
                     console.log(`✅ Admin email sent successfully to ${adminEmail}!`);
                     console.log(`   Message ID: ${adminEmailResult.messageId}`);
@@ -386,11 +390,11 @@ router.post('/', protect, async (req, res) => {
                   }
                 }
                 
-                console.log(`✅ All email notifications processed for COD order ${purchase._id}`);
+                console.log(`✅ All email notifications processed for order ${purchase._id} (${purchase.paymentMethod})`);
                 console.log(`📧 ==========================================`);
               }
             } catch (emailError) {
-              console.error('❌ Error sending email notification for COD order:', emailError);
+              console.error(`❌ Error sending email notification for order ${purchase._id} (${purchase.paymentMethod}):`, emailError);
               console.error('Error details:', {
                 message: emailError.message,
                 code: emailError.code,
@@ -521,17 +525,30 @@ router.put('/:id/status', protect, async (req, res) => {
 
         // Send user notification if status changed and is one we notify about
         const notifiableStatuses = ['processing', 'shipped', 'delivered', 'completed', 'cancelled', 'refunded'];
+        console.log(`📧 Status update: Order ${purchase._id} - Old: ${oldStatus}, New: ${status}`);
+        console.log(`📧 Is notifiable status? ${notifiableStatuses.includes(status)}, Status changed? ${oldStatus !== status}`);
+        
         if (oldStatus !== status && notifiableStatuses.includes(status)) {
+            console.log(`📧 Attempting to send email notification for order ${purchase._id} - Status: ${status}`);
             // Send notification asynchronously (don't wait for it)
             sendUserNotification(purchase, status).then(result => {
                 if (result.success) {
-                    console.log(`✅ Email notification sent successfully for order ${purchase._id}`);
+                    console.log(`✅ Email notification sent successfully for order ${purchase._id} - Status: ${status}`);
+                    console.log(`📧 Message ID: ${result.messageId || 'N/A'}`);
                 } else {
-                    console.warn(`⚠️ Email notification failed for order ${purchase._id}:`, result.error);
+                    console.warn(`⚠️ Email notification failed for order ${purchase._id} - Status: ${status}`);
+                    console.warn(`⚠️ Error: ${result.error || 'Unknown error'}`);
                 }
             }).catch(err => {
-                console.error('❌ Failed to send user notification:', err);
+                console.error(`❌ Failed to send user notification for order ${purchase._id} - Status: ${status}:`, err);
+                console.error(`❌ Error details:`, {
+                    message: err.message,
+                    code: err.code,
+                    stack: err.stack
+                });
             });
+        } else {
+            console.log(`📧 Skipping email notification - Status not changed or not notifiable`);
         }
 
         res.json({
