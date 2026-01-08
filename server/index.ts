@@ -151,6 +151,9 @@ if (!fs.existsSync(uploadsDir)) {
   console.log('📁 Created uploads directory:', uploadsDir);
 }
 
+// Serve static files from dist/public (where Vite builds the client)
+app.use(express.static(path.join(__dirname, '../dist/public')));
+// Also serve from dist root for backward compatibility
 app.use(express.static(path.join(__dirname, '../dist')));
 
 // Serve HTML files directly
@@ -982,7 +985,10 @@ app.get('/', (req, res) => {
 app.get('*', (req, res) => {
   // Only serve React app for non-API routes
   if (!req.path.startsWith('/api/')) {
-    const indexPath = path.join(__dirname, '../dist/index.html');
+    // Try dist/public/index.html first (Vite build output), then dist/index.html as fallback
+    const indexPath = fs.existsSync(path.join(__dirname, '../dist/public/index.html'))
+      ? path.join(__dirname, '../dist/public/index.html')
+      : path.join(__dirname, '../dist/index.html');
     if (fs.existsSync(indexPath)) {
       res.sendFile(indexPath);
     } else {
