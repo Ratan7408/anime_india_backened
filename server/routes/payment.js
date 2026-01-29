@@ -7,6 +7,16 @@ const router = express.Router();
 // POST /api/payment/initiate - Legacy endpoint for backward compatibility
 router.post('/initiate', async (req, res) => {
   try {
+    // Verify PhonePe client is initialized
+    if (!phonepeClient) {
+      console.error('❌ PhonePe client is not initialized');
+      return res.status(500).json({
+        success: false,
+        message: 'Payment gateway not configured',
+        error: 'PhonePe client initialization failed',
+      });
+    }
+
     const { amount, merchantTransactionId, userId } = req.body;
 
     // Strict validation
@@ -32,6 +42,11 @@ router.post('/initiate', async (req, res) => {
       .redirectUrl(redirectUrl) // PhonePe will redirect here AFTER payment completes
       .build();
 
+    console.log('📤 Creating PhonePe SDK order...');
+    console.log('   Amount:', Math.round(Number(amount) * 100), 'paise');
+    console.log('   Merchant Order ID:', merchantTransactionId);
+    console.log('   Redirect URL:', redirectUrl);
+    
     const response = await phonepeClient.createSdkOrder(orderRequest);
     
     console.log('📦 PhonePe SDK createSdkOrder() response:', JSON.stringify(response, null, 2));
@@ -65,10 +80,14 @@ router.post('/initiate', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ PhonePe initiate error:', err.message);
+    console.error('❌ Full error:', err);
+    console.error('❌ Error stack:', err.stack);
+    console.error('❌ Error details:', JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
     return res.status(500).json({
       success: false,
       message: 'Payment initiation failed',
       error: err.message,
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     });
   }
 });
