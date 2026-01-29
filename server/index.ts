@@ -6,19 +6,33 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load .env from server folder
-const envPath = join(__dirname, '.env');
-console.log('🔍 Loading .env from:', envPath);
-const result = dotenv.config({ path: envPath });
-if (result.error) {
-  console.error('❌ Error loading .env:', result.error);
-} else {
-  console.log('✅ .env loaded successfully from:', envPath);
-  console.log('📋 Variables loaded:', Object.keys(result.parsed || {}).length);
+// Try multiple locations for .env file
+// When bundled, __dirname is dist/, so we need to look in parent directories
+const possiblePaths = [
+  join(__dirname, '.env'),                    // dist/.env (if bundled)
+  join(__dirname, '..', '.env'),              // backend/.env (from dist/)
+  join(__dirname, '..', 'server', '.env'),    // backend/server/.env (from dist/)
+  join(process.cwd(), '.env'),                // backend/.env (from current working directory)
+  join(process.cwd(), 'server', '.env'),      // backend/server/.env (from current working directory)
+];
+
+let envLoaded = false;
+for (const envPath of possiblePaths) {
+  console.log('🔍 Trying to load .env from:', envPath);
+  const result = dotenv.config({ path: envPath });
+  if (!result.error) {
+    console.log('✅ .env loaded successfully from:', envPath);
+    console.log('📋 Variables loaded:', Object.keys(result.parsed || {}).length);
+    envLoaded = true;
+    break;
+  }
 }
 
-// Also load from root directory as fallback
-dotenv.config();
+// Final fallback to default location
+if (!envLoaded) {
+  console.log('⚠️ Trying default .env location...');
+  dotenv.config();
+}
 
 
 console.log('🚀 Starting server...');
