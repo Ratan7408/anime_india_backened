@@ -44,6 +44,14 @@ if (!clientId || !clientSecret) {
   throw new Error("❌ Missing PhonePe credentials. Check .env file.");
 }
 
+// Log configuration (without exposing secret)
+console.log('📱 PhonePe Configuration:');
+console.log('   CLIENT_ID:', clientId ? `${clientId.substring(0, 8)}...` : '❌ Missing');
+console.log('   CLIENT_SECRET:', clientSecret ? '✅ Set (hidden)' : '❌ Missing');
+console.log('   CLIENT_VERSION:', clientVersion);
+console.log('   ENVIRONMENT:', env === Env.PRODUCTION ? 'PRODUCTION' : 'SANDBOX');
+console.log('   PHONEPE_ENVIRONMENT env:', process.env.PHONEPE_ENVIRONMENT || 'Not set (defaulting to SANDBOX)');
+
 export const phonepeClient = StandardCheckoutClient.getInstance(
   clientId,
   clientSecret,
